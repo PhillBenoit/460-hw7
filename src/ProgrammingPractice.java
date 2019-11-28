@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.sql.*;
 
@@ -148,8 +149,8 @@ public class ProgrammingPractice {
 			day = (input/100)%100;
 			year = input%100;
 			if (month == 2 && year % 4 == 0) max_day++;
-			do_over = day <= max_day;
-			if (do_over) System.err.printf("%d month only has %d days (you "
+			do_over = day > max_day || day == 0;
+			if (do_over) System.err.printf("%d month has %d days (you "
 					+ "entered %d)", month, max_day, day);
 		} while (do_over);
 		
@@ -185,16 +186,120 @@ public class ProgrammingPractice {
 
     }
 	
+    private static void checkResultErrors() {
+    	SQLWarning w = null;
+    	if (results != null) {
+			try {
+				w = results.getWarnings();
+				while (w != null) {
+					System.err.println(w.getMessage());
+					w = results.getWarnings();
+				}
+			}
+			catch (SQLException e1) {}
+		}
+    }
+    
+    private static void checkQueryErrors() {
+		try {
+			SQLWarning w = query.getWarnings();
+			while (w != null) {
+				System.err.println(w.getMessage());
+				w = query.getWarnings();
+			}
+		} catch (SQLException e1) {}
+
+    }
+    
+    private static void checkPQueryErrors() {
+		try {
+			SQLWarning w = prepared_query.getWarnings();
+			while (w != null) {
+				System.err.println(w.getMessage());
+				w = prepared_query.getWarnings();
+			}
+		} catch (SQLException e1) {}
+    }
+    
     public static void listPools() {
     	
     }
     
     public static void addProblem() {
-    	
+    	try {
+			results = query.executeQuery("SELECT COUNT(emailAddress) FROM ProblemsPool");
+			results.next();
+			if (results.getInt(1) == 0) {
+				System.out.println("No problem pools exist!");
+				return;
+			}
+			results.close();
+			
+			String member = getString("Enter email address for the member "
+					+ "having the relevant problem pool:", STR_MAX);
+			
+			prepared_query = db_connection.prepareStatement("SELECT "
+					+ "COUNT(emailAddress) FROM Member WHERE "
+					+ "emailAddress = ?");
+			prepared_query.setString(1, member);
+			results = prepared_query.executeQuery();
+			if (results.getInt(1) == 0) {
+				System.out.println("No member exists with this email!");
+				return;
+			}
+			results.close();
+			prepared_query.close();
+			
+			prepared_query = db_connection.prepareStatement("SELECT poolName "
+					+ "FROM ProblemsPool WHERE emailAddress = ?");
+			prepared_query.setString(1, member);
+			ArrayList<String> pools = new ArrayList<String>();
+			results = prepared_query.executeQuery();
+			while (results.next()) pools.add(results.getString(1));
+			if (pools.isEmpty()) {
+				System.out.println("This member has no problem pool!");
+				return;
+			}
+			prepared_query.close();
+			results.close();
+			
+			System.out.println("Problem pools available:\n");
+			int count = 0;
+			for (String p:pools) System.out.println(++count + " " + p);
+			System.out.println();
+			int pool = getIntegerBetweenLowAndHigh("", 1, count);
+			prepared_query = db_connection.prepareStatement("SELECT COUNT()"); 
+			
+		} catch (SQLException e) {
+			System.err.println(e.getMessage());
+			checkResultErrors();
+			checkQueryErrors();
+		} finally {
+			try {results.close();} catch (SQLException e) {}
+			results = null;
+			pause();
+		}
     }
     
     public static void listLegacyMembers() {
-    	
+    	try {
+			results = query.executeQuery("SELECT emailAddress FROM Member WHERE "
+					+ "MONTHS_BETWEEN(SYSDATE, subscriptionStartDate)*8 > 400");
+    		if (results.next()) {
+    			System.out.println("Here are the email addresses of members who have paid more than $400.");
+    			do System.out.println(results.getString(1));
+    			while (results.next());
+    		}
+    		else System.out.println("No qualified paying member exists!");
+		} catch (SQLException e) {
+			System.err.println(e.getMessage());
+			checkResultErrors();
+			checkQueryErrors();
+		} finally {
+			try {results.close();} catch (SQLException e) {}
+    		results = null;
+    		pause();
+		}
     }
     
     public static void addMember() {
@@ -228,6 +333,10 @@ public class ProgrammingPractice {
 			System.out.println("New member added!");
 		} catch (SQLException e) {
 			System.err.println(e.getMessage());
+			checkPQueryErrors();
+		} finally {
+			try {prepared_query.close();} catch (SQLException e) {}
+			pause();
 		}
     }
     
@@ -270,8 +379,12 @@ public class ProgrammingPractice {
     		if (db_connection == null)
     			throw new Exception("getConnection failed");
     		query = db_connection.createStatement();
+    		if (query == null)
+    			throw new Exception("createStatement failed");
+    		
     	} catch (Exception e) {
 			e.printStackTrace();
+			closeEverything();
 			System.exit(1);
 		}
     	
