@@ -142,7 +142,7 @@ public class ProgrammingPractice {
 
 		do {
 			input = getIntegerBetweenLowAndHigh(msg, 10100, 123199);
-			month = input % 10000;
+			month = input / 10000;
 			max_day = DAYS_IN_MONTH[month];
 			day = (input/100)%100;
 			year = input%100;
@@ -212,11 +212,13 @@ public class ProgrammingPractice {
 
 	public static void listPools() {
 		try {
-			results = query.executeQuery("SELECT firstName, lastName, poolName,"
-					+ " title, difficulty from Member, Problem, ComposedOf WHERE"
-					+ " Member.emailAddress = Problem.ContributorEmail AND "
-					+ "Problem.title = ComposedOf.title AND Problem.ContributorEmail"
-					+ " = ComposedOf.emailAddress ORDER BY lastName, title");
+			results = query.executeQuery("SELECT Member.firstName, "
+					+ "Member.lastName, ComposedOf.poolName, ComposedOf.title,"
+					+ " Problem.difficulty from Member, Problem, ComposedOf "
+					+ "WHERE Member.emailAddress = Problem.ContributorEmail "
+					+ "AND Problem.title = ComposedOf.title AND "
+					+ "Problem.ContributorEmail = ComposedOf.emailAddress "
+					+ "ORDER BY Member.lastName, ComposedOf.title");
 
 			if (!results.next()) {
 				System.out.println("There are no problems!");
