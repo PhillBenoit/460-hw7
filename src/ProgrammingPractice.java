@@ -213,22 +213,20 @@ public class ProgrammingPractice {
 	public static void listPools() {
 		try {
 			String search_query = "SELECT Member.firstName, Member.lastName, "
-					+ "ComposedOf.poolName, ComposedOf.title, "
-					+ "Problem.difficulty from Member, Problem, ComposedOf "
-					+ "WHERE Member.emailAddress = Problem.ContributorEmail "
-					+ "AND Problem.title = ComposedOf.title AND "
-					+ "Problem.ContributorEmail = ComposedOf.emailAddress "
-					+ "ORDER BY Member.lastName, ComposedOf.title, "
-					+ "ComposedOf.poolName";
+					+ "ComposedOf.poolName, Problem.title, Problem.difficulty "
+					+ "FROM ComposedOf RIGHT JOIN Problem ON Problem.title = "
+					+ "ComposedOf.title AND Problem.ContributorEmail = "
+					+ "ComposedOf.emailAddress RIGHT JOIN Member ON "
+					+ "Member.emailAddress = Problem.ContributorEmail ORDER BY"
+					+ " Member.lastName, ComposedOf.title, ComposedOf.poolName";
 			results = query.executeQuery(search_query);
 			
-
 			if (!results.next()) {
 				System.out.println("There are no problems!");
 				return;
 			}
 			
-			String format_string = "%%%ds  %%%ds  %%%ds  %%%ds\n";
+			String format_string = "%%-%ds  %%-%ds  %%-%ds  %%-%ds\n";
 			String[] header = {"Member","Problem Pool","Problem","Difficulty"};
 			int[] col_length = new int[header.length];
 			
@@ -240,8 +238,9 @@ public class ProgrammingPractice {
 				name = results.getString(1) + " " + results.getString(2);
 				col_length[0] = Math.max(col_length[0], name.length());
 				for (int i = 1; i < header.length; i++)
-					col_length[i] = Math.max(col_length[i],
-							results.getString(i+2).length());
+					if (results.getString(i+2) != null)
+						col_length[i] = Math.max(col_length[i],
+								results.getString(i+2).length());
 			} while (results.next());
 			results.close();
 
@@ -249,9 +248,11 @@ public class ProgrammingPractice {
 					col_length[1], col_length[2], col_length[3]);
 			
 			results = query.executeQuery(search_query);
+			results.next();
 			String previous_name = "";
 			System.out.printf(format_string, header[0], header[1], header[2],
 					header[3]);
+			String[] other_cols = new String[3];
 			do {
 				name = results.getString(1) + " " + results.getString(2);
 				if (name.equals(previous_name)) name = "";
@@ -259,8 +260,12 @@ public class ProgrammingPractice {
 					System.out.println();
 					previous_name = String.valueOf(name);
 				}
-				System.out.printf(format_string, name, results.getString(3),
-						results.getString(4), results.getString(5));
+				for (int i = 0; i < 3; i++) {
+					other_cols[i] = results.getString(i+3);
+					other_cols[i] = other_cols[i] == null ? "" : other_cols[i];
+				}
+				System.out.printf(format_string, name, other_cols[0],
+						other_cols[1], other_cols[2]);
 			} while (results.next());
 		} catch (SQLException e) {
 			System.err.println(e.getMessage());
@@ -293,6 +298,7 @@ public class ProgrammingPractice {
 					+ "emailAddress = ?");
 			prepared_query.setString(1, member);
 			results = prepared_query.executeQuery();
+			results.next();
 			if (results.getInt(1) == 0) {
 				System.out.println("No member exists with this email!");
 				return;
@@ -322,7 +328,7 @@ public class ProgrammingPractice {
 			pool--;
 
 			prepared_query = db_connection.prepareStatement("SELECT title FROM "
-					+ "Problem WHERE ContributorEmail != ? AND title NOT IN "
+					+ "Problem WHERE ContributorEmail = ? AND title NOT IN "
 					+ "(SELECT title FROM ComposedOf WHERE emailAddress = ? AND"
 					+ " poolName = ?)");
 			prepared_query.setString(1, member);
