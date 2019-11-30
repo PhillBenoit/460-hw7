@@ -212,14 +212,16 @@ public class ProgrammingPractice {
 
 	public static void listPools() {
 		try {
-			results = query.executeQuery("SELECT Member.firstName, "
-					+ "Member.lastName, ComposedOf.poolName, ComposedOf.title,"
-					+ " Problem.difficulty from Member, Problem, ComposedOf "
+			String search_query = "SELECT Member.firstName, Member.lastName, "
+					+ "ComposedOf.poolName, ComposedOf.title, "
+					+ "Problem.difficulty from Member, Problem, ComposedOf "
 					+ "WHERE Member.emailAddress = Problem.ContributorEmail "
 					+ "AND Problem.title = ComposedOf.title AND "
 					+ "Problem.ContributorEmail = ComposedOf.emailAddress "
 					+ "ORDER BY Member.lastName, ComposedOf.title, "
-					+ "ComposedOf.poolName");
+					+ "ComposedOf.poolName";
+			results = query.executeQuery(search_query);
+			
 
 			if (!results.next()) {
 				System.out.println("There are no problems!");
@@ -241,11 +243,12 @@ public class ProgrammingPractice {
 					col_length[i] = Math.max(col_length[i],
 							results.getString(i+2).length());
 			} while (results.next());
+			results.close();
 
 			format_string = String.format(format_string, col_length[0],
 					col_length[1], col_length[2], col_length[3]);
 			
-			results.first();
+			results = query.executeQuery(search_query);
 			String previous_name = "";
 			System.out.printf(format_string, header[0], header[1], header[2],
 					header[3]);
