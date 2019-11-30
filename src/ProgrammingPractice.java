@@ -218,7 +218,8 @@ public class ProgrammingPractice {
 					+ "WHERE Member.emailAddress = Problem.ContributorEmail "
 					+ "AND Problem.title = ComposedOf.title AND "
 					+ "Problem.ContributorEmail = ComposedOf.emailAddress "
-					+ "ORDER BY Member.lastName, ComposedOf.title");
+					+ "ORDER BY Member.lastName, ComposedOf.title, "
+					+ "ComposedOf.poolName");
 
 			if (!results.next()) {
 				System.out.println("There are no problems!");
