@@ -218,7 +218,7 @@ public class ProgrammingPractice {
 					+ "ComposedOf.title AND Problem.ContributorEmail = "
 					+ "ComposedOf.emailAddress RIGHT JOIN Member ON "
 					+ "Member.emailAddress = Problem.ContributorEmail ORDER BY"
-					+ " Member.lastName, ComposedOf.title, ComposedOf.poolName";
+					+ " Member.lastName, Problem.title, ComposedOf.poolName";
 			results = query.executeQuery(search_query);
 			
 			if (!results.next()) {
